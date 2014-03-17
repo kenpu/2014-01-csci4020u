@@ -1,0 +1,136 @@
+== JVM and Java bytecodes ==
+
+Java bytecode is the form of instructions that the Java virtual machine executes. This document is a quick introduction. For more information go to http://docs.oracle.com/javase/specs/.
+
+* Basic structure 
+
+The structure of a JVM assembly file goes as follows:
+
+.class public <Your executable class name>
+.super java/lang/Object
+
+.method public <init>()V
+  aload_0
+  invokenonvirtual java/lang/Object/<init>()V
+  return
+.end method
+
+.method public static main([Ljava/lang/String;)V
+  .limit stack <stack-size-you-need>
+  .limit locals <number of local variables>
+
+<your code goes here>
+
+  return
+.end method
+
+* Basic Syntax
+JVM assembly has a simplest possible syntax. The general syntax is:
+
+<label>:
+
+or
+
+<instruction> [<opererand1>] [<operand2>]
+
+Newline separates the instructions. Indentation does not matter.
+
+* Instructions
+All JVM instructions operate on the stack.  Each instruction, f, can be thought of a tiny function call z=f(x,y).  The arguments are assumed to be on top of the stack in the order of y and x.  The function call will execute f(x,y), and if f returns a value z=f(x,y), then z will be placed on top of the stack (replacing y, x).  
+
+We also have local variables to each member enumerated starting in 0. The maximum number of variables for a method should be declared using the instruction ".limit locals" at the bigining of the method. You can copy values from a variable to the stack and move values from the stack to a local variable.
+
+Instructions also has a prefix that indicates the type of data that is handling. We have:
+
+- i : integer
+- f : float
+
+** Instructions that afect variables and stack
+
+- {i,f}store <num> : remove a value from the stack and store it the variable <num>. 
+- {i,f}load <num>  : insert the value of the variable <num> into the stack.
+
+For this instructions there are aliases for storing/loading into/from the variables 0 to 4 that are using the suffix "_<num>". For instance: istore_0 pop an integer from the stack and store it into the variable 0.
+
+** Arithmetic instructions
+All this instructions remove the two topmost values from the stack and store it results there:
+
+- {i,f}add - addition
+- {i,f}sub - subtraction
+- {i,f}mul - multiplication
+- {i,f}div - division
+
+This instructions requires that all values of the same type, if you need perform operations with values of different type, you should convert all to the same.
+
+** Instructions for data type conversion
+
+- i2f - Pops an integer and pushes a float into the stack
+- f2i - Pops a float and pushes a integer into the stack
+
+** Instructions for comparison
+All this instructions pop a value from the stack and perform a comparison. If the check is true they branch to the instruction labeled by <label>
+
+- ifeq <label> - Check if equal to zero.
+- ifne <label> - Check if not equal to zero.
+- ifge <label> - Check if greater or equal than zero.
+- ifgt <label> - Check if greater than zero.
+- ifle <label> - Check if less or equal than zero.
+- iflt <label> - Check if less than zero.
+
+* Other useful instructions
+- ldc <value> - insert <value> into the stack. It determines the type of <value> according of its representation. Example: 10 is integer, but 10.0 is float.
+
+- iinc <variable> <value> - add the integer <value> to <variable> (it must be integer) This instruction does not uses the stack.
+
+- goto <label> - branch to the instruction labeled by <label>.
+
+* Instructions that perform method invocation
+
+Java, in general, distinguishes methods into the following classes:
+- Static methods
+- Virtual methods
+- Nonvirtual methods
+
+We know about static methods: they are the methods associated with a Java class annotated by static keyword.  Virtual methods are methods that are associated with Java objects, and can be override by methods in the subclass.  For Java, by default, all nonstatic methods are virtual methods.  Finally, nonvirtual methods are object methods that have been annotated by the final keyword -- they cannot be override by inheritance.
+
+So, invocation of virtual methods is the most important tasks simply because most Java methods are virtual.  In assembly level, there is no object oriented programming, so invocation of a method like:
+
+teacher.assignGrade(student, 80);
+
+becomes like
+
+assignGrade(teacher, student, 80);
+
+The method assignGrade should expect three arguments - the first is the object, and the rest are the other arguments.
+
+The method name is of the form
+<java class>/<method><signature>
+
+To invoke a virtual method, JVM assembly has the following instruction:
+invokevirtual <java class>/<method><signature>
+
+A very handy method is the one of System.out.println.  Because System.out is a PrintStream, the method name is:
+
+java/io/PrintStream/println(I)V
+
+where (I)V is the signature which says that println accepts a Integer as a argument and returns void.
+
+To print the integer 10, we need to push the Sytem.out object onto the stack, and then the the integer, and finally invoke println method:
+
+getstatic java/lang/System/out Ljava/io/PrintStream;
+ldc 10
+invokevirtual java/io/PrintStream/println(I)V
+
+* Assembling Java bytecodes
+
+For assembling we are going to use Jasmin (http://jasmin.sourceforge.net/). Jasmin takes ASCII descriptions of Java classes, written in a simple assembler-like syntax using the Java Virtual Machine instruction set. It converts them into binary Java class files, suitable for loading by a Java runtime system.
+
+** Running Jasmin
+
+java -jar jasmin.jar myfile.j
+
+Jasmin looks at the .class directive contained in the myfile.j file to decide where to place the output class file. So if myfile.j starts with:
+
+    .class mypackage/MyClass
+
+then Jasmin will place the output class file "MyClass.class" in the subdirectory "mypackage" of the current directory.

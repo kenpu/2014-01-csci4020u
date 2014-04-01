@@ -13,7 +13,7 @@
   
     ; -----------------------------------
     ; for(i=0; i < 5; i++)
-    ;   System.out.println("Hello world")
+    ;   System.out.println(i)
 
             ; i = 0
             ldc 0
@@ -22,7 +22,18 @@
     begin_for:
             ; System.out.println("Hello World");
             getstatic java/lang/System/out Ljava/io/PrintStream;
-            ldc "Hello World"
+            
+            ; Convert var<0> to a string on top of the stack
+            new java/lang/StringBuilder
+            dup
+            invokespecial java/lang/StringBuilder/<init>()V
+            ldc "i = "
+            invokevirtual java/lang/StringBuilder/append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+            iload 0
+            invokevirtual java/lang/StringBuilder/append(I)Ljava/lang/StringBuilder;
+            invokevirtual java/lang/StringBuilder/toString()Ljava/lang/String;
+
+            ; --------------
             invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
 
             ; i = i + 1
